@@ -1,0 +1,50 @@
+# 📦 Step 1: Import all needed libraries
+from openai import OpenAI
+from bs4 import BeautifulSoup
+import requests
+import gradio as gr
+
+# 🔑 Step 2: Your Gemini API key
+key = "YOUR_GEMINI_API_KEY"
+
+# 🌐 Step 3: Fetch content from Azure Students website
+response = requests.get("https://azure.microsoft.com/en-in/free/students/")
+website_text = response.text
+
+# 🧽 Step 4: Clean the HTML and extract text
+mysoup = BeautifulSoup(website_text, "html.parser")
+website_content = mysoup.text
+
+# 🤖 Step 5: Set up Gemini model
+gemini_model = OpenAI(
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    api_key=key
+)
+
+# 💬 Step 6: Define bot function
+def lwaibot(userprompt):
+    mymsg = [
+        {
+            "role": "system",
+            "content": f"""You are an AI assistant trained to support users with Microsoft Azure. 
+            Read content: {website_content}"""
+        },
+        {
+            "role": "user",
+            "content": userprompt
+        }
+    ]
+    response = gemini_model.chat.completions.create(
+        model="gemini-2.5-flash",
+        messages=mymsg
+    )
+    return response.choices[0].message.content
+
+# 🖼️ Step 7: Gradio UI
+gr.Interface(
+    fn=lwaibot,
+    inputs="text",
+    outputs="text",
+    title="AI Bot",
+    description="Ask any question about Azure for Students"
+).launch()
